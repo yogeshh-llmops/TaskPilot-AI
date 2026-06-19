@@ -2,8 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.deps import get_db
+
 from app.models.employee import Employee
-from app.schemas.employee import EmployeeCreate
+from app.models.task import Task
+
+from app.schemas.employee import (
+    EmployeeCreate,
+    EmployeeOut
+)
 
 router = APIRouter(
     prefix="/employees",
@@ -11,8 +17,8 @@ router = APIRouter(
 )
 
 
-# Create Employee
-@router.post("/")
+# CREATE EMPLOYEE
+@router.post("/", response_model=EmployeeOut)
 def create_employee(
     employee: EmployeeCreate,
     db: Session = Depends(get_db)
@@ -31,18 +37,16 @@ def create_employee(
     return new_employee
 
 
-# Get All Employees
-@router.get("/")
-def get_all_employees(
+# GET ALL EMPLOYEES
+@router.get("/", response_model=list[EmployeeOut])
+def get_employees(
     db: Session = Depends(get_db)
 ):
-    employees = db.query(Employee).all()
-
-    return employees
+    return db.query(Employee).all()
 
 
-# Get Employee By ID
-@router.get("/{employee_id}")
+# GET SINGLE EMPLOYEE
+@router.get("/{employee_id}", response_model=EmployeeOut)
 def get_employee(
     employee_id: int,
     db: Session = Depends(get_db)
@@ -60,8 +64,8 @@ def get_employee(
     return employee
 
 
-# Update Employee
-@router.put("/{employee_id}")
+# UPDATE EMPLOYEE
+@router.put("/{employee_id}", response_model=EmployeeOut)
 def update_employee(
     employee_id: int,
     employee_data: EmployeeCreate,
@@ -88,7 +92,7 @@ def update_employee(
     return employee
 
 
-# Delete Employee
+# DELETE EMPLOYEE
 @router.delete("/{employee_id}")
 def delete_employee(
     employee_id: int,
@@ -104,9 +108,15 @@ def delete_employee(
             detail="Employee not found"
         )
 
+    # Delete all tasks assigned to employee
+    db.query(Task).filter(
+        Task.employee_id == employee_id
+    ).delete()
+
     db.delete(employee)
+
     db.commit()
 
     return {
-        "message": "Employee deleted successfully"
+        "message": "Employee and assigned tasks deleted successfully"
     }

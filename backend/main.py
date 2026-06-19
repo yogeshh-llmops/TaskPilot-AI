@@ -1,48 +1,45 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-# Database
-from app.database.db import Base, engine
+from app.database.db import engine, Base
 
-# Models
-from app.models.user import User
-from app.models.employee import Employee
-from app.models.project import Project
-
-# Routers
 from app.api.auth import router as auth_router
 from app.api.employee import router as employee_router
 from app.api.project import router as project_router
+from app.api.task import router as task_router
+from app.api.analytics import router as analytics_router
+from app.api.project_progress import router as project_progress_router
+from app.api.performance import router as performance_router
+from app.api.risk import router as risk_router
+from app.api.notifications import router as notifications_router
 
-# Create all database tables
 Base.metadata.create_all(bind=engine)
 
-# FastAPI App
 app = FastAPI(
     title="TaskPilot AI",
-    version="1.0.0",
-    description="AI-Powered Business Automation & Workforce Management Platform"
+    version="1.0.0"
 )
 
-# Register Routers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to TaskPilot AI Backend 🚀"
+    }
+
 app.include_router(auth_router)
 app.include_router(employee_router)
 app.include_router(project_router)
-
-
-# Home Route
-@app.get("/")
-def home():
-    return {
-        "message": "TaskPilot AI Backend Running 🚀",
-        "version": "1.0.0",
-        "status": "healthy"
-    }
-
-
-# Health Check Route
-@app.get("/health")
-def health_check():
-    return {
-        "status": "OK",
-        "database": "connected"
-    }
+app.include_router(task_router)
+app.include_router(analytics_router)
+app.include_router(project_progress_router)
+app.include_router(performance_router)
+app.include_router(risk_router)
+app.include_router(notifications_router)
